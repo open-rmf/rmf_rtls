@@ -1,0 +1,11 @@
+__pycache__
+build
+.vscode
+
+#db
+*.sqlite3
+
+# Executables
+*.exe
+*.out
+*.app
