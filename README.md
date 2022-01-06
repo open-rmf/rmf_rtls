@@ -39,5 +39,5 @@ Run the server
 ros2 run rmf_rtls rmf_rtls_server
 ```
 
-- Endpoins: http://0.0.0.0:8080/docs
+- Endpoins: http://0.0.0.0:8081/docs
 - *.sqlite3 will be created when server is running.

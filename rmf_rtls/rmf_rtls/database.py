@@ -21,7 +21,6 @@ from tortoise.contrib.fastapi import register_tortoise
 from tortoise import fields
 from tortoise.models import Model
 
-from tortoise.fields.data import CharField, JSONField
 from rmf_api_msgs.models import rtls_tag_state, transformation_2D
 
 PydanticRtlsTagState = rtls_tag_state.RtlsTagState
@@ -30,18 +29,19 @@ PydanticTransformation2D = transformation_2D.Transformation2D
 ###############################################################################
 
 
-class TtmBaseModel(Model):
+class JsonMixin(Model):
     id = fields.CharField(255, pk=True, source_field="id")
     data = fields.JSONField()
 
 
-class TtmTransformation2D(TtmBaseModel):
-    pass
+class TtmTransformation2D(JsonMixin):
+    # Note: target_map is unique, thus is set as id - pk
+    ref_map = fields.CharField(255, null=True, index=True)
 
 
-class TtmRtlsTagState(TtmBaseModel):
-    asset_type = CharField(255, null=True, index=True)
-    asset_subtype = CharField(255, null=True, index=True)
+class TtmRtlsTagState(JsonMixin):
+    asset_type = fields.CharField(255, null=True, index=True)
+    asset_subtype = fields.CharField(255, null=True, index=True)
 
 
 ###############################################################################
@@ -68,6 +68,7 @@ class RtlsTagState(PydanticRtlsTagState):
 
 ###############################################################################
 
+# Create a transformation tree from rmf_map
 class Transformation2D(PydanticTransformation2D):
     @staticmethod
     def from_ttm(tortoise: TtmTransformation2D) -> "Transformation2D":
@@ -79,12 +80,16 @@ class Transformation2D(PydanticTransformation2D):
 
     async def save(self) -> None:
         return await TtmTransformation2D.update_or_create(
-            {"data": self.dict()}, id=self.target_map)
+            {
+                "data": self.dict(),
+                "ref_map": self.ref_map,
+            },
+            id=self.target_map)
 
 
 ###############################################################################
 
-def setup_database(app: FastAPI, db_url="sqlite://db.sqlite3"):
+def setup_database(app: FastAPI, db_url: str):
     register_tortoise(
         app,
         db_url=db_url,

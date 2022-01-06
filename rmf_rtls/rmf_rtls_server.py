@@ -32,7 +32,9 @@ from rmf_api_msgs.models import rtls_tag_state, transformation_2D
 import uvicorn
 from fastapi import FastAPI
 
-# ORM interface
+from pydantic import BaseModel
+
+# ORM
 import rmf_rtls.database as db
 
 app = FastAPI()
@@ -76,7 +78,6 @@ class rmf_rtls:
     # Set Map Transformation
     @app.post('/open-rmf/rtls/map_transformation/')
     async def update_map_transformation(dest: Transformation2DModel):
-        # TODO: a check to ensure each: target_map is unique
         tf_2d_orm = db.Transformation2D.from_pydantic(dest)
         return await tf_2d_orm.save()
 
@@ -85,26 +86,14 @@ class rmf_rtls:
              response_model=Transformation2DModel)
     async def get_map_transformation(
         target_map: str,
-        ref_map: str  
+        ref_map: str = None  # TODO: will need to construct a tf tree
     ):
-        tf_2d = await db.TtmTransformation2D.get_or_none(
-            id=target_map, ref_map=ref_map)
+        tf_2d = await db.TtmTransformation2D.get_or_none(id=target_map)
         if tf_2d is None:
             return None
-
-        # TODO: will need to construct a tf tree
-        # TODO: loop through transformation tree
         print(f"Return tf_2d query of: {id}")
-        value = db.Transformation2D.from_ttm(tf_2d)
-        return value
+        return db.Transformation2D.from_ttm(tf_2d)
 
-
-# TODO
-def transformation_2D_multiplier(
-        tf1: Transformation2DModel,
-        tf2: Transformation2DModel) -> Transformation2DModel:
-    # tf1
-    return tf1
 
 ###############################################################################
 
@@ -116,15 +105,11 @@ def main(argv=sys.argv):
                         type=str, help='host address, default 0.0.0.0')
     parser.add_argument('-p', '--port', default="8081",
                         type=str, help='port number, default 8081')
-    parser.add_argument('-db', '--db_url', default="sqlite://db.sqlite3",
-                        type=str, help='db url, default sqlite://db.sqlite3')
     args = parser.parse_args(argv[1:])
 
-    # TODO: usage of rmf_traffic_editor map?
+    print(" Run RTLS Server...")
 
-    print(f" Run RTLS Server... {args.host_address}:{args.port}")
-
-    db.setup_database(app, db_url=args.db_url)
+    db.setup_database(app)
 
     uvicorn.run(app,
                 host=args.host_address,
