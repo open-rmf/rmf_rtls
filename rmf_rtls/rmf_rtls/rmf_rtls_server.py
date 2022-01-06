@@ -35,15 +35,37 @@ from fastapi import FastAPI
 # ORM interface
 import rmf_rtls.database as db
 
+from pydantic import BaseModel, Field, parse_obj_as
+
 app = FastAPI()
 
 tag_state_schema = schemas.rtls_tag_state()
 RtlsTagStateModel = rtls_tag_state.RtlsTagState
 Transformation2DModel = transformation_2D.Transformation2D
 
+
 ###############################################################################
+class RtlsTagStatesResponse(BaseModel):
+    success: bool
+    response: str = Field(
+        ..., description='response msg'
+    )
+    data: Optional[List[RtlsTagStateModel]] = Field(
+        None, description='rtls tag states data if avail'
+    )
 
 
+class Transfromation2DResponse(BaseModel):
+    success: bool
+    response: str = Field(
+        ..., description='response msg'
+    )
+    data: Optional[Transformation2DModel] = Field(
+        None, description='transformation of 2 maps if avail'
+    )
+
+
+###############################################################################
 class rmf_rtls:
     def __init__(self):
         # TODO: impl of rmf_feature_lib
@@ -57,7 +79,7 @@ class rmf_rtls:
 
     # Get Matching Tag States
     @app.get('/open-rmf/rtls/tag_state/',
-             response_model=List[RtlsTagStateModel])
+             response_model=RtlsTagStatesResponse)
     async def get_tag_state(
         tag_id: Optional[str] = None,
         asset_type: Optional[str] = None,
@@ -70,8 +92,15 @@ class rmf_rtls:
             asset_subtype=asset_subtype
         )
         if tag_states is None:
-            return None
-        return [db.RtlsTagState.from_ttm(tag_states)]
+            return RtlsTagStatesResponse(
+                success=False,
+                response="No matching tag states")
+
+        return RtlsTagStatesResponse(
+            success=True,
+            response="Successfully query matching tag states",
+            data=[db.RtlsTagState.from_ttm(tag_states)]
+        )
 
     # Set Map Transformation
     @app.post('/open-rmf/rtls/map_transformation/')
@@ -82,21 +111,27 @@ class rmf_rtls:
 
     # Get Map Transformation
     @app.get('/open-rmf/rtls/map_transformation/',
-             response_model=Transformation2DModel)
+             response_model=Transfromation2DResponse)
     async def get_map_transformation(
         target_map: str,
-        ref_map: str  
+        ref_map: str
     ):
         tf_2d = await db.TtmTransformation2D.get_or_none(
             id=target_map, ref_map=ref_map)
         if tf_2d is None:
-            return None
+            return Transfromation2DResponse(
+                success=False,
+                response="Transforamtion is not avail")
 
         # TODO: will need to construct a tf tree
         # TODO: loop through transformation tree
         print(f"Return tf_2d query of: {id}")
-        value = db.Transformation2D.from_ttm(tf_2d)
-        return value
+        tf_data = db.Transformation2D.from_ttm(tf_2d)
+
+        return Transfromation2DResponse(
+            success=True,
+            response="Successfully query transformation",
+            data=tf_data)
 
 
 # TODO
@@ -122,7 +157,7 @@ def main(argv=sys.argv):
 
     # TODO: usage of rmf_traffic_editor map?
 
-    print(f" Run RTLS Server... {args.host_address}:{args.port}")
+    print(f" Run RTLS Server... http://{args.host_address}:{args.port}")
 
     db.setup_database(app, db_url=args.db_url)
 
