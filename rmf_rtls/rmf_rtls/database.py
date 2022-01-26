@@ -34,11 +34,12 @@ class JsonMixin(Model):
     data = fields.JSONField()
 
 
+# Note: target_map is unique, thus is set as id - pk
 class TtmTransformation2D(JsonMixin):
-    # Note: target_map is unique, thus is set as id - pk
     ref_map = fields.CharField(255, null=True, index=True)
 
 
+# Note: tag_id is set as id (pk)
 class TtmRtlsTagState(JsonMixin):
     asset_type = fields.CharField(255, null=True, index=True)
     asset_subtype = fields.CharField(255, null=True, index=True)

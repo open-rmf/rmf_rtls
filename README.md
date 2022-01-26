@@ -1,19 +1,14 @@
 # rmf_rtls
 
-rmf realtime location system. This server provides a common coordinate system for multiple vendored RTLS-s.
-Systems can provide or retrieve tags information and map transfromation by interacting the endpoints of RTLS server.
-The `rtls_server` persists all tagstates and transformation informaiton in a databad, and can scale horizontally.
+Web-based rmf realtime location system. This service provides a common coordinate system and agnostic RLTS data format for different vendored RTL-systems.
+
+Vendored RTLS-s can provide or retrieve tags information and map transfromation by interacting the endpoints of RTLS server.
+
+The `rtls_server` persists all tag states and map transformations in a database.
 
 > Still work in progress
 
-Roadmap:
-The location information of rtls tags could enable certain features in RMF core. These features include:
-
-1.  block congested lanes
-2.  update tag as "readonly" robot
-3.  ...
-
-## Available APIs Endpoints
+## Available REST APIs Endpoints
 
 - `/open-rmf/rtls/map_transformation`
   - POST and GET method
@@ -29,6 +24,9 @@ The location information of rtls tags could enable certain features in RMF core.
 
 Installation
 
+Dependencies: 
+ - [rmf_api_msgs](https://github.com/open-rmf/rmf_api_msgs)
+
 ```bash
 pip3 install tortoise-orm fastapi uvicorn
 ```
@@ -39,8 +37,17 @@ Run the server
 ros2 run rmf_rtls rmf_rtls_server
 ```
 
-- Endpoins: http://0.0.0.0:8081/docs
+- Endpoins: http://0.0.0.0:8085/docs
 - *.sqlite3 will be created when server is running.
 
 ## WishList
- - enable to boundary webhook with `rmf_traffic_editor`
+
+Roadmap:
+The location information of rtls tags could enable certain features in RMF core. These features include:
+
+1.  block congested lanes
+2.  update tag as "readonly" robot
+3.  ...
+
+Others:
+ - enable specify operating boundary with `rmf_traffic_editor`, web hook to trigger
