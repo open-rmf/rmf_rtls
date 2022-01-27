@@ -28,7 +28,7 @@ from rmf_api_msgs.models import rtls_tag_state, transformation_2D
 
 # web server
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 # ORM interface
 import rmf_rtls.database as db
@@ -100,6 +100,22 @@ async def get_tag_state(
     )
 
 
+@app.delete("/open-rmf/rtls/tag_state/")
+async def delete_tag_state(tag_id: str):
+    """
+    Delete a map transformation
+    """
+    tf_2d = await db.TtmRtlsTagState.get_or_none(id=tag_id)
+    if tf_2d is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    await tf_2d.delete()
+    return RtlsTagStatesResponse(
+        success=True,
+        response=f"Successfully tag_id {tag_id}")
+
+###############################################################################
+
+
 @app.post('/open-rmf/rtls/map_transformation/')
 async def update_map_transformation(dest: Transformation2DModel):
     """
@@ -145,6 +161,21 @@ async def get_map_transformation(
         response="Successfully query and calc transformation",
         data=tf_data)
 
+
+@app.delete("/open-rmf/rtls/map_transformation/")
+async def delete_map_transformation(target_map: str, ref_map: str):
+    """
+    Delete a map transformation
+    """
+    tf_2d = await db.TtmTransformation2D.get_or_none(
+        id=target_map, ref_map=ref_map)
+    if tf_2d is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    await tf_2d.delete()
+    return Transfromation2DResponse(
+        success=True,
+        response="Successfully remove transformation "
+        f"between {target_map} from {ref_map}")
 
 ###############################################################################
 
